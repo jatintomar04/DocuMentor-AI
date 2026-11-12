@@ -1,7 +1,7 @@
 
 import axios from "axios";
 
-const API_URL = "http://localhost:8080";
+const API_URL = "https://documentor-ai.onrender.com";
 
 const getAuthConfig = () => {
   if (typeof window === "undefined") {

@@ -43,17 +43,19 @@ export const askQuestion = async (
 
   // 3. Search only selected document chunks
   const relevantChunks = await vectorStore.similaritySearch(
-    question.trim(),
-    4,
-    {
-      must: [
-        {
-          key: "documentId",
-          match: { value: documentId.trim() },
+  question.trim(),
+  4,
+  {
+    must: [
+      {
+        key: "metadata.documentId",
+        match: {
+          value: documentId.trim(),
         },
-      ],
-    }
-  );
+      },
+    ],
+  }
+);
 
   if (relevantChunks.length === 0) {
     return "I couldn't find this information in the selected document.";
