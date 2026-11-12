@@ -1,4 +1,3 @@
-
 import "dotenv/config";
 import { QdrantClient } from "@qdrant/js-client-rest";
 
@@ -10,9 +9,9 @@ const client = new QdrantClient({
 const setupCollection = async () => {
   const collectionName = "resume-documents";
 
-  const result = await client.getCollections();
+  const collections = await client.getCollections();
 
-  const exists = result.collections.some(
+  const exists = collections.collections.some(
     (collection) => collection.name === collectionName
   );
 
@@ -24,16 +23,15 @@ const setupCollection = async () => {
       },
     });
 
-    console.log("Collection created!");
+    console.log("Collection created");
   }
 
-  // Create payload index for documentId
   await client.createPayloadIndex(collectionName, {
-    field_name: "documentId",
+    field_name: "metadata.documentId",
     field_schema: "keyword",
   });
 
-  console.log("documentId payload index created!");
+  console.log("Payload index created successfully!");
 };
 
 setupCollection().catch(console.error);
