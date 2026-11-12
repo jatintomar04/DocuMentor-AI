@@ -35,3 +35,4 @@ const setupCollection = async () => {
 };
 
 setupCollection().catch(console.error);
+export { client as qdrantClient };

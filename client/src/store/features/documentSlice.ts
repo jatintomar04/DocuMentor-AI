@@ -7,7 +7,7 @@ import {
 
 import type { PayloadAction } from "@reduxjs/toolkit";
 
-import { getMyDocuments } from "@/service/documentService";
+import { getMyDocuments, removeDocument } from "@/service/documentService";
 import { uploadDocument } from "@/service/uploadDocument";
 
 export interface DocumentItem {
@@ -84,6 +84,19 @@ export const uploadDocumentThunk = createAsyncThunk<
   }
 );
 
+export const removeDocumentThunk = createAsyncThunk(
+  "documents/removeDocument",
+  async (documentid: string, { rejectWithValue }) => {
+    try {
+      const response = await removeDocument(documentid);
+      return { documentid, ...response };
+    } catch (error: unknown) {
+      return rejectWithValue(getErrorMessage(error, "Unable to delete"));
+    }
+  }
+);
+
+
 const documentSlice = createSlice({
   name: "documents",
   initialState,
@@ -131,7 +144,29 @@ const documentSlice = createSlice({
       .addCase(uploadDocumentThunk.rejected, (state, action) => {
         state.uploading = false;
         state.error = action.payload ?? "Upload failed";
+      })
+
+
+      // removeDocument 
+
+      .addCase(removeDocumentThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+
+      .addCase(removeDocumentThunk.fulfilled, (state, action) => {
+        state.loading = false;
+
+        state.documents = state.documents.filter(
+          (doc) => doc._id !== action.payload.documentid
+        );
+      })
+
+      .addCase(removeDocumentThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
+
   },
 });
 

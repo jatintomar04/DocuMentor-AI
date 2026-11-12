@@ -10,6 +10,7 @@ import {
 import type { AuthRequest } from "../middleware/authMiddleware.js";
 import { embedPDF } from "../service/embedPdf.js";
 import cloudinary from "../config/cloudinary.js";
+import { qdrantClient } from "../config/createCollection.js";
 import axios from "axios";
 
 const confirmSchema = z.object({
@@ -276,6 +277,110 @@ export const previewDocument = async (
     res.status(500).json({
       success: false,
       message: "Unable to preview document",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Internal server error",
+    });
+  }
+};
+
+
+
+// Remove document from Qdrant, Cloudinary and MongoDB
+
+export const removeDocument = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const { documentid } = req.body;
+    const userId = req.userId;
+
+    // 1. Validate document ID
+    if (!documentid || !mongoose.isValidObjectId(documentid)) {
+      return res.status(400).json({
+        success: false,
+        message: "Valid document ID required",
+      });
+    }
+
+    // 2. Validate user
+    if (!userId || !mongoose.isValidObjectId(userId)) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    // 3. Find document belonging to logged-in user
+    const document = await Document.findOne({
+      _id: documentid,
+      userId,
+    });
+
+    if (!document) {
+      return res.status(404).json({
+        success: false,
+        message: "Document not found",
+      });
+    }
+
+    // 4. Delete vectors from Qdrant
+    await qdrantClient.delete("resume-documents", {
+      wait: true,
+      filter: {
+        must: [
+          {
+            key: "metadata.documentId",
+            match: {
+              value: document._id.toString(),
+            },
+          },
+        ],
+      },
+    });
+
+    console.log("Qdrant embeddings deleted");
+
+    // 5. Delete PDF/file from Cloudinary
+    const cloudinaryResult = await cloudinary.uploader.destroy(
+      document.publicId,
+      {
+        resource_type: "raw",
+        type: "authenticated",
+        invalidate: true,
+      }
+    );
+
+    if (
+      cloudinaryResult.result !== "ok" &&
+      cloudinaryResult.result !== "not found"
+    ) {
+      throw new Error("Cloudinary file deletion failed");
+    }
+
+    console.log("Cloudinary file deleted");
+
+    // 6. Delete document from MongoDB
+    await Document.deleteOne({
+      _id: document._id,
+      userId,
+    });
+
+    console.log("MongoDB document deleted");
+
+    return res.status(200).json({
+      success: true,
+      message: "Document deleted successfully",
+    });
+
+  } catch (error) {
+    console.error("Remove document error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to delete document",
       error:
         error instanceof Error
           ? error.message

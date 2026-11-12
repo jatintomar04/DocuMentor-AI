@@ -70,7 +70,20 @@ export const getDocumentPreview = async (
     }
   );
 
-  console.log("PDF Response:", response.status, response.data.size);
+
+  return response.data;
+};
+
+
+export const removeDocument = async (documentid: string) => {
+ 
+
+  const response = await axios.delete(
+    `${API_URL}/api/file/remove`,{
+      data : {documentid},
+      ...getAuthConfig()
+    }
+  )
 
   return response.data;
 };

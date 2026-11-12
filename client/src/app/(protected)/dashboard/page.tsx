@@ -15,16 +15,18 @@ import {
   Sparkles,
   Upload,
   X,
+  Trash
 } from 'lucide-react'
 import Link from 'next/link'
 import { useDispatch, useSelector } from 'react-redux'
 import { AppDispatch, RootState } from '@/store/store'
 import { useSyncExternalStore } from "react";
-import { fetchDocuments, uploadDocumentThunk } from '@/store/features/documentSlice'
+import { fetchDocuments, removeDocumentThunk, uploadDocumentThunk } from '@/store/features/documentSlice'
 import { askQuestion as askQuestionThunk } from '@/store/features/chatSlice'
 import PdfPreview from "@/components/PDFpreview";
 import { logout } from '@/store/features/authSlice'
 import { useRouter } from 'next/navigation'
+import Loader from '@/components/Loader'
 
 
 
@@ -41,7 +43,7 @@ export default function DashboardPage() {
   const getServerSnapshot = () => false;
   const { user } = useSelector((state: RootState) => state.auth)
   const { documents } = useSelector((state: RootState) => state.documents)
-  const { messages } = useSelector((state: RootState) => state.chat);
+  const { messages, loading } = useSelector((state: RootState) => state.chat);
   const [activeDocumentId, setActiveDocumentId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -50,7 +52,8 @@ export default function DashboardPage() {
   const [sent, setSent] = useState(false)
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
-
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const uploadSectionRef = useRef<HTMLDivElement>(null);
   const mounted = useSyncExternalStore(
     subscribe,
     getClientSnapshot,
@@ -58,16 +61,23 @@ export default function DashboardPage() {
   );
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>()
-  const chooseFile = (file?: File) => {
-    if (file) {
-      setUploaded(file);
-    }
-  };
-  const askQuestion = (value = question) => {
-    if (!value.trim()) return
-    setQuestion(value)
-    setSent(true)
-  }
+ const chooseFile = (file?: File) => {
+  if (!file) return;
+
+  setUploaded(file);
+
+  requestAnimationFrame(() => {
+    uploadSectionRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  });
+};
+  // const askQuestion = (value = question) => {
+  //   if (!value.trim()) return
+  //   setQuestion(value)
+  //   setSent(true)
+  // }
 
   const handleUpload = async () => {
     if (!uploaded) {
@@ -118,10 +128,42 @@ export default function DashboardPage() {
     dispatch(fetchDocuments())
   }, [dispatch])
 
+
+  useEffect(() => {
+    const chatBox = chatContainerRef.current;
+
+    if (chatBox) {
+      chatBox.scrollTo({
+        top: chatBox.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  }, [messages, loading]);
+
+  const handleRemoveDocument = async (documentid: string) => {
+  const confirmDelete = window.confirm(
+    "Are you sure you want to delete this document?"
+  );
+
+  if (!confirmDelete) return;
+
+  try {
+    await dispatch(removeDocumentThunk(documentid)).unwrap();
+
+    if (activeDocumentId === documentid) {
+      setActiveDocumentId(null);
+    }
+  } catch (error) {
+    console.error("Delete failed:", error);
+  }
+};
+  
+
   const handleLogout = () => {
     dispatch(logout());
     router.replace("/signin");
   };
+
 
   const filteredDocuments = documents?.filter((doc) =>
     doc.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -229,7 +271,7 @@ export default function DashboardPage() {
                   Workspace
                 </p>
                 <h1 className="text-xl font-semibold tracking-[-.04em]" suppressHydrationWarning>
-                  Welcome,  Welcome,{" "}
+                  Welcome,{" "}
                   {mounted && user?.name
                     ? user.name.charAt(0).toUpperCase() + user.name.slice(1)
                     : "Guest"}
@@ -263,10 +305,12 @@ export default function DashboardPage() {
                 </p>
               </div>
               <button
-                onClick={handleUpload}
+                type="button"
+                onClick={() => inputRef.current?.click()}
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#182342] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#293a76]"
               >
-                <Upload className="size-4" /> Upload document
+                <Upload className="size-4" />
+                Choose document
               </button>
             </div>
 
@@ -290,7 +334,7 @@ export default function DashboardPage() {
 
             <div className="grid gap-6 xl:grid-cols-[.82fr_1.55fr]">
               {/* Document List */}
-              <section 
+              <section
                 id="documents"
                 className="rounded-2xl border border-[#e1e6f0] bg-white p-5"
               >
@@ -318,55 +362,71 @@ export default function DashboardPage() {
                       className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-[#526df0]"
                     />
                   )}
-                  </div>
-                  <div className="space-y-2">
-                    {filteredDocuments.length > 0 ? (
-                      filteredDocuments.map((doc) => {
-                        const isActive = activeDocumentId === doc._id;
+                </div>
+                <div className="space-y-2">
+                  {filteredDocuments.length > 0 ? (
+                    filteredDocuments.map((doc) => {
+                      const isActive = activeDocumentId === doc._id;
 
-                        return (
-                          <button
-                            key={doc._id}
-                            type="button"
-                            onClick={() => setActiveDocumentId(doc._id)}
-                            className={`flex w-full items-center gap-3 rounded-xl p-3 text-left transition ${isActive ? "bg-[#eef1ff]" : "hover:bg-[#f7f8fc]"
-                              }`}
-                          >
-                            <span
-                              className={`grid size-10 place-items-center rounded-lg ${isActive
-                                  ? "bg-white text-[#526df0]"
-                                  : "bg-[#f1f3f8] text-[#8992a7]"
-                                }`}
-                            >
-                              <FileText className="size-4" />
-                            </span>
+                      return (
+                       <div
+  key={doc._id}
+  onClick={() => setActiveDocumentId(doc._id)}
+  className={`flex w-full items-center gap-3 rounded-xl p-3 text-left transition cursor-pointer ${
+    isActive ? "bg-[#eef1ff]" : "hover:bg-[#f7f8fc]"
+  }`}
+>
+  <span
+    className={`grid size-10 place-items-center rounded-lg ${
+      isActive
+        ? "bg-white text-[#526df0]"
+        : "bg-[#f1f3f8] text-[#8992a7]"
+    }`}
+  >
+    <FileText className="size-4" />
+  </span>
 
-                            <span className="min-w-0 flex-1">
-                              <span
-                                className={`block truncate text-sm font-medium ${isActive ? "text-[#526df0]" : ""
-                                  }`}
-                              >
-                                {doc.title}
-                              </span>
+  <span className="min-w-0 flex-1">
+    <span
+      className={`block truncate text-sm font-medium ${
+        isActive ? "text-[#526df0]" : ""
+      }`}
+    >
+      {doc.title}
+    </span>
 
-                              <span className="mt-1 block text-xs text-[#8992a7]">
-                                Uploaded at: {doc.createdAt ? new Date(doc.createdAt).toLocaleString() : "Unknown date"}
-                              </span>
-                            </span>
+    <span className="mt-1 block text-xs text-[#8992a7]">
+      Uploaded at:{" "}
+      {doc.createdAt
+        ? new Date(doc.createdAt).toLocaleString()
+        : "Unknown date"}
+    </span>
+  </span>
 
-                            <MoreHorizontal className="size-4 text-[#aab2c2]" />
-                          </button>
-                        );
-                      })
-                    ) : (
-                      <p className="py-6 text-center text-sm text-gray-400">
-                        {searchQuery ? "No matching documents found." : "No documents uploaded yet."}
-                      </p>
-                    )}
-                  </div>
-                  <button className="mt-5 w-full rounded-xl border border-dashed border-[#cbd4ed] py-3 text-sm font-medium text-[#526df0] hover:bg-[#f7f8fc]">
-                    View all documents
-                  </button>
+  <button
+    type="button"
+    onClick={(e) => {
+      e.stopPropagation();
+      handleRemoveDocument(doc._id);
+    }}
+    className="rounded-lg p-2 transition hover:bg-red-50"
+    title="Delete document"
+  >
+    <Trash className="size-4 text-[#aab2c2] hover:text-red-500" />
+  </button>
+</div>
+                        
+                      );
+                    })
+                  ) : (
+                    <p className="py-6 text-center text-sm text-gray-400">
+                      {searchQuery ? "No matching documents found." : "No documents uploaded yet."}
+                    </p>
+                  )}
+                </div>
+                <button className="mt-5 w-full rounded-xl border border-dashed border-[#cbd4ed] py-3 text-sm font-medium text-[#526df0] hover:bg-[#f7f8fc]">
+                  View all documents
+                </button>
               </section>
 
               {/* Chat Interface */}
@@ -392,7 +452,10 @@ export default function DashboardPage() {
                     </p>
 
                     {/* Chat messages */}
-                    <div className="max-h-[450px] space-y-3 overflow-y-auto">
+                    <div
+                      ref={chatContainerRef}
+                      className="max-h-[450px] space-y-3 overflow-y-auto"
+                    >
                       {messages?.length > 0 ? (
                         messages.map((message, index) => (
                           <div
@@ -422,12 +485,29 @@ export default function DashboardPage() {
                         ))
                       ) : (
                         <div className="rounded-xl bg-[#182342] p-4 text-sm leading-6 text-white/85">
-                          <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-[#aebdff]">
+                          <Sparkles className="mb-2 size-3.5 text-[#aebdff]" />
+                          Ask a question to start exploring the content of this document.
+                        </div>
+                      )}
+
+                      {/* LOADER HERE */}
+                      {loading && (
+                        <div className="mr-2 rounded-xl bg-[#182342] p-4">
+                          <div className="mb-3 flex items-center gap-2 text-xs font-semibold text-[#aebdff]">
                             <Sparkles className="size-3.5" />
                             DocuMentor AI
                           </div>
 
-                          Ask a question to start exploring the content of this document.
+                          <div className="flex items-center gap-2">
+                            <div className="flex gap-1">
+                              <span className="size-2 animate-bounce rounded-full bg-[#aebdff]" />
+                              <span className="size-2 animate-bounce rounded-full bg-[#aebdff] [animation-delay:150ms]" />
+                              <span className="size-2 animate-bounce rounded-full bg-[#aebdff] [animation-delay:300ms]" />
+                            </div>
+                            <span className="text-xs text-white/60">
+                              Analyzing your document...
+                            </span>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -444,6 +524,8 @@ export default function DashboardPage() {
                           {item}
                         </button>
                       ))}
+
+
                     </div>
 
                     {/* Question input */}
@@ -529,7 +611,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Bottom Upload Section */}
-            <section className="rounded-2xl bg-gradient-to-r from-[#182342] to-[#31468b] p-6 text-white sm:p-8">
+            <section ref={uploadSectionRef} className="rounded-2xl bg-gradient-to-r from-[#182342] to-[#31468b] p-6 text-white sm:p-8">
               <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-center">
                 <div>
                   <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-[#b8c4ff]">
@@ -555,11 +637,51 @@ export default function DashboardPage() {
                   />
                 </label>
               </div>
+
               {uploaded && (
-                <p className="mt-5 rounded-lg bg-white/10 px-3 py-2 text-xs text-white/80">
-                  Ready to upload: {uploaded && <p>Selected file: {uploaded.name}</p>}
-                </p>
+                <div className="mt-5 flex flex-col gap-4 rounded-xl border border-white/20 bg-white/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="grid size-11 shrink-0 place-items-center rounded-lg bg-white/15">
+                      <FileText className="size-5 text-white" />
+                    </div>
+
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-white">
+                        Document selected
+                      </p>
+                      <p className="truncate text-xs text-white/70">
+                        {uploaded.name}
+                      </p>
+                      <p className="mt-1 text-xs text-[#b8c4ff]">
+                        Ready to upload
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex shrink-0 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setUploaded(null)}
+                      className="rounded-lg border border-white/30 px-4 py-2 text-xs font-semibold text-white hover:bg-white/10"
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleUpload}
+                      disabled={loading}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2 text-xs font-bold text-[#182342] hover:bg-[#eef1ff] disabled:opacity-50"
+                    >
+                      <Upload className="size-4" />
+                      Upload PDF
+                    </button>
+                  </div>
+
+                </div>
               )}
+
             </section>
           </div>
         </section>
