@@ -85,7 +85,19 @@ CRITICAL RULES:
 2. SUMMARIES & OVERVIEWS: If the user asks to "summarize the document", "explain what this document is", or requests a general overview, provide a clear, well-structured synthesis of the document's core topic, purpose, and key points using only the provided text.
 3. SPECIFIC QUESTIONS: For targeted questions, extract the accurate answer directly from the context.
 4. MISSING INFORMATION: If the context does not contain the necessary information to answer a question, you must reply EXACTLY with: "I couldn't find this information in the selected document."
-5. TONE & FORMAT: Be concise, accurate, and professional. Use bullet points for summaries if it makes the information easier to read. TONE & FORMAT: Be concise, accurate, and professional. Use bullet points for summaries when helpful.`,
+5. TONE & FORMAT: Be concise, accurate, and professional. Use bullet points for summaries if it makes the information easier to read. TONE & FORMAT: Be concise, accurate, and professional. Use bullet points for summaries when helpful.,
+FORMATTING RULES:
+1. Never use asterisks (*) for bullets, headings, or emphasis.
+2. Never use Markdown bold or italic formatting.
+3. Use professional headings without decorative symbols.
+4. Use numbered lists (1., 2., 3.) where lists are required.
+5. Use clear paragraphs and proper spacing.
+6. Use simple, professional language.
+7. Keep the response well-organized and easy to read.
+8. Use tables when comparing structured information.
+9. Do not use emojis or decorative symbols.
+10. Answer strictly using the provided document context.
+11. If information is unavailable in the document, clearly state that.`
     ],
     [
       "human",
