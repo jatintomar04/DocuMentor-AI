@@ -18,7 +18,7 @@ const app = express()
 app.use(
   cors({
     origin: ["http://localhost:3000",
-      "https://docu-mentor-ai-one.vercel.app/"
+      "https://docu-mentor-ai-one.vercel.app"
     ],
     credentials: true,
   })
