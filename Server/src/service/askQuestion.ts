@@ -46,7 +46,12 @@ export const askQuestion = async (
     question.trim(),
     4,
     {
-      documentId: documentId.trim(),
+      must: [
+        {
+          key: "documentId",
+          match: { value: documentId.trim() },
+        },
+      ],
     }
   );
 
