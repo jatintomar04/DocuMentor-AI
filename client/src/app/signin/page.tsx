@@ -10,10 +10,10 @@ import { useRouter } from 'next/navigation'
 import Loader from '@/components/Loader'
 import { toast } from 'sonner'
 import Footer from '@/components/Footer'
+import AuthRedirect from '@/components/AuthRedirect'
 
 
 export default function SignIn() {
-
    const dispatch = useDispatch <AppDispatch>()
     const router = useRouter()
   const {user,loading, iserror} = useSelector((state:RootState)=>state.auth)
@@ -67,7 +67,7 @@ export default function SignIn() {
   }
 
   return (
-
+    <AuthRedirect>
     <main className='min-h-screen  bg-[#fbfcff]  text-[#10172b] selection:bg-[#cdd8ff]'>
           <header className="flex items-center justify-between bg-transparent px-4 py-4 sm:px-6 md:px-10 lg:px-16 xl:px-20">
                 <Link href="/" className="flex items-center gap-2.5 font-semibold tracking-[-.04em]" aria-label="DocuMentor AI home">
@@ -165,5 +165,6 @@ export default function SignIn() {
     </div>
     <Footer />
     </main>
+    </AuthRedirect>
   )
 }

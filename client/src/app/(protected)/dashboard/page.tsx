@@ -26,7 +26,7 @@ import { askQuestion as askQuestionThunk } from '@/store/features/chatSlice'
 import PdfPreview from "@/components/PDFpreview";
 import { logout } from '@/store/features/authSlice'
 import { useRouter } from 'next/navigation'
-import Loader from '@/components/Loader'
+
 
 
 
