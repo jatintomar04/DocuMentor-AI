@@ -15,6 +15,7 @@ export interface DocumentItem {
   title: string;
   publicId: string;
   status?: string;
+  createdAt?: string;
 }
 
 interface DocumentState {

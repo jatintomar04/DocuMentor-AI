@@ -350,7 +350,7 @@ export default function DashboardPage() {
                               </span>
 
                               <span className="mt-1 block text-xs text-[#8992a7]">
-                                Uploaded at: {new Date(doc.createdAt).toLocaleString()}
+                                Uploaded at: {doc.createdAt ? new Date(doc.createdAt).toLocaleString() : "Unknown date"}
                               </span>
                             </span>
 
@@ -504,7 +504,7 @@ export default function DashboardPage() {
                           <div className="bg-gray-100 p-3">
                             <PdfPreview
                               documentId={String(selectedDocument._id)}
-                              token={user?.token || ""}
+                              token={(user as { token?: string } | null)?.token || ""}
                             />
                           </div>
 

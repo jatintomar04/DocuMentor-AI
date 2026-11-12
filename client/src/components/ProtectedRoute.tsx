@@ -24,7 +24,7 @@ export default function ProtectedLayout({
   }, [ user, router]);
 
   if(loading){
-    return Loader
+    return <Loader />;
   }
 
 
